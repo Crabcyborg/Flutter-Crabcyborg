@@ -23,6 +23,8 @@ List<Color> colors;
 
 void main() => runApp(MyApp());
 
+String style = "gradient";
+
 List<List> grid = [];
 
 class MyApp extends StatelessWidget {
@@ -142,7 +144,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                     margin: const EdgeInsets.all(2.0),
                     decoration: new BoxDecoration(
                       color: value['empty'] ? null : colors[(value['colorIndex'] + animation.value.toInt()) % colors.length],
-                      gradient: value['empty'] ? null : new LinearGradient(
+                      gradient: value['empty'] || style != 'gradient' ? null : new LinearGradient(
                         colors: value['empty'] ? [] : [
                           colors[(value['colorIndex'] + animation.value.toInt()) % colors.length],
                           colors[(value['colorIndex'] + animation.value.toInt() + 1) % colors.length]
@@ -157,7 +159,25 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                   )
                 ).toList()
               )
-          ).toList()..add(
+          ).toList()
+          ..add(SizedBox(height: 10))
+          ..add(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+              RaisedButton(
+                onPressed: () => style = 'solid',
+                child: Text('solid')
+              ),
+              SizedBox(width: 10),
+              RaisedButton(
+                onPressed: () => style = 'gradient',
+                child: Text('gradient')
+              )
+            ])
+          )
+          ..add(SizedBox(height: 20))
+          ..add(
             Container(
               margin: const EdgeInsets.only(top: 10.0),
               child: Linkify(
@@ -172,7 +192,8 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                 linkStyle: TextStyle(color: Colors.blue[500]),
               )
             )
-          )..add(
+          )
+          ..add(
             Container(
               margin: const EdgeInsets.only(top: 10.0),
               child: RaisedButton(
