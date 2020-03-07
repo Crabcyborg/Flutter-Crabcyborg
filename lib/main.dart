@@ -1,5 +1,7 @@
 import 'package:flutter/animation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 
 List<String> colorStrings = [
   '105,55,173','65,7,143','157,40,189','112,61,125',
@@ -27,8 +29,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Crab Cyborg',
       theme: ThemeData(
+         primaryIconTheme: const IconThemeData.fallback().copyWith(
+          color: Colors.white,
+        ),
         primarySwatch: Colors.lightGreen,
         primaryTextTheme: TextTheme(
           title: TextStyle(
@@ -36,7 +41,7 @@ class MyApp extends StatelessWidget {
           )
         )
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Crab Cyborg'),
     );
   }
 }
@@ -78,10 +83,12 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       List row = [];
 
       while(++x < width) {
+        bool empty = (skull[dataIndex] & targets[targetIndex]) == 0;
 				row.add({
           "x": x,
           "y": y,
-          "colorIndex": (skull[dataIndex] & targets[targetIndex]) == 0 ? null : x+y
+          "empty": empty,
+          "colorIndex": empty ? null : x+y
         });
 
 				if(targetIndex++ == 7) {
@@ -133,11 +140,70 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                     width: 20,
                     height: 20,
                     margin: const EdgeInsets.all(2.0),
-                    color: value['colorIndex'] == null ? null : colors[(value['colorIndex'] + animation.value.toInt()) % colors.length]
+                    decoration: new BoxDecoration(
+                      color: value['empty'] ? null : colors[(value['colorIndex'] + animation.value.toInt()) % colors.length],
+                      gradient: value['empty'] ? null : new LinearGradient(
+                        colors: value['empty'] ? [] : [
+                          colors[(value['colorIndex'] + animation.value.toInt()) % colors.length],
+                          colors[(value['colorIndex'] + animation.value.toInt() + 1) % colors.length]
+                        ],
+                      ),
+                      border: value['empty'] ? null : new Border.all(
+                          width: 1.0,
+                          style: BorderStyle.solid
+                      ),
+                      borderRadius: new BorderRadius.all(new Radius.circular(8.0)),
+                    ),
                   )
                 ).toList()
               )
-          ).toList()
+          ).toList()..add(
+            Container(
+              margin: const EdgeInsets.only(top: 10.0),
+              child: Linkify(
+                onOpen: (link) async {
+                  if(await canLaunch(link.url)) {
+                    await launch(link.url);
+                  } else {
+                    throw 'Could not launch $link';
+                  }
+                },
+                text: "This website is open source https://github.com/Crabcyborg/Flutter-Crabcyborg",
+                linkStyle: TextStyle(color: Colors.blue[500]),
+              )
+            )
+          )..add(
+            Container(
+              margin: const EdgeInsets.only(top: 10.0),
+              child: RaisedButton(
+                child: Text('Load Another Scene'),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SecondRoute()),
+                  );
+                },
+              )
+            ))
+      ),
+    );
+  }
+}
+
+class SecondRoute extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Second Route"),
+      ),
+      body: Center(
+        child: RaisedButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: Text('Go back!'),
+        ),
       ),
     );
   }
