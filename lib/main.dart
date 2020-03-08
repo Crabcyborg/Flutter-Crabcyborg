@@ -20,33 +20,29 @@ List<String> colorStrings = [
 ];
 
 List<Color> colors;
-
-void main() => runApp(MyApp());
-
+List<List> grid = [];
 String style = 'gradient';
 
-List<List> grid = [];
+int offsetColorIndex(int index, int offset) => (index + offset) % colors.length;
 
-List<Widget> renderShapeUp(Animation animation, int overrideColorIndex, Function onTap) => grid.map<Widget>(
+List<Widget> renderShapeUp({int colorIndexOffset = 0, int overrideColorIndex = -1, Function onTap}) => grid.map<Widget>(
     (row) => Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: row.map<Widget>(
-        (value) => InkWell(
-          onTap: onTap != null && !value['empty'] ? () => onTap(
-            (value['colorIndex'] + (animation != null ? animation.value.toInt() : 0)) % colors.length
-          ) : null,
+        (value) => GestureDetector(
+          onTap: onTap == null || value['empty'] ? null : () => onTap(offsetColorIndex(value['colorIndex'], colorIndexOffset)),
           child: Container(
             width: 20,
             height: 20,
             margin: const EdgeInsets.all(2.0),
             decoration: new BoxDecoration(
-              color: overrideColorIndex != null ? (value['empty'] ? null : colors[overrideColorIndex]) : (value['empty'] ? null : colors[(value['colorIndex'] + (animation != null ? animation.value.toInt() : 0)) % colors.length]),
-              gradient: value['empty'] || style != 'gradient' || overrideColorIndex != null ? null : new LinearGradient(
+              color: value['empty'] ? null : (overrideColorIndex >= 0 ? colors[overrideColorIndex] : colors[(value['colorIndex'] + colorIndexOffset) % colors.length]),
+              gradient: value['empty'] || style != 'gradient' || overrideColorIndex >= 0 ? null : new LinearGradient(
                 begin: Alignment(-1.0, -1.0),
                 end: Alignment(1.0, 1.0),
-                colors: value['empty'] || overrideColorIndex != null ? [] : [
-                  colors[(value['colorIndex'] + (animation != null ? animation.value.toInt() : 0)) % colors.length],
-                  colors[(value['colorIndex'] + (animation != null ? animation.value.toInt() : 0) + 1) % colors.length]
+                colors: value['empty'] || overrideColorIndex >= 0 ? [] : [
+                  colors[offsetColorIndex(value['colorIndex'], colorIndexOffset)],
+                  colors[offsetColorIndex(value['colorIndex'], colorIndexOffset + 1)]
                 ],
               ),
               border: value['empty'] ? null : new Border.all(
@@ -60,6 +56,8 @@ List<Widget> renderShapeUp(Animation animation, int overrideColorIndex, Function
       ).toList()
     )
 ).toList();
+
+void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
   @override
@@ -168,10 +166,13 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       ),
       body: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: renderShapeUp(animation, null, (colorIndex) => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => SecondRoute(colorIndex: colorIndex)),
-          ))
+          children: renderShapeUp(
+            colorIndexOffset: animation.value.toInt(),
+            onTap: (colorIndex) => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SecondRoute(colorIndex: colorIndex)),
+            )
+          )
           ..add(SizedBox(height: 10))
           ..add(Container(padding: const EdgeInsets.all(20.0), child: Text('Clicking on any grid cell will load a new route with a new Shape Up widget in the selected color.')))
           ..add(
@@ -193,6 +194,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
           ..add(
             Container(
               margin: const EdgeInsets.only(top: 10.0),
+              padding: const EdgeInsets.all(20.0),
               child: Linkify(
                 onOpen: (link) async {
                   if(await canLaunch(link.url)) {
@@ -226,7 +228,7 @@ class SecondRoute extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: renderShapeUp(null, colorIndex, null)
+          children: renderShapeUp( overrideColorIndex: colorIndex )
         )
       ),
     );
