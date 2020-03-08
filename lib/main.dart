@@ -23,9 +23,43 @@ List<Color> colors;
 
 void main() => runApp(MyApp());
 
-String style = "gradient";
+String style = 'gradient';
 
 List<List> grid = [];
+
+List<Widget> renderShapeUp(Animation animation, int overrideColorIndex, Function onTap) => grid.map<Widget>(
+    (row) => Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: row.map<Widget>(
+        (value) => InkWell(
+          onTap: onTap != null && !value['empty'] ? () => onTap(
+            (value['colorIndex'] + (animation != null ? animation.value.toInt() : 0)) % colors.length
+          ) : null,
+          child: Container(
+            width: 20,
+            height: 20,
+            margin: const EdgeInsets.all(2.0),
+            decoration: new BoxDecoration(
+              color: overrideColorIndex != null ? (value['empty'] ? null : colors[overrideColorIndex]) : (value['empty'] ? null : colors[(value['colorIndex'] + (animation != null ? animation.value.toInt() : 0)) % colors.length]),
+              gradient: value['empty'] || style != 'gradient' || overrideColorIndex != null ? null : new LinearGradient(
+                begin: Alignment(-1.0, -1.0),
+                end: Alignment(1.0, 1.0),
+                colors: value['empty'] || overrideColorIndex != null ? [] : [
+                  colors[(value['colorIndex'] + (animation != null ? animation.value.toInt() : 0)) % colors.length],
+                  colors[(value['colorIndex'] + (animation != null ? animation.value.toInt() : 0) + 1) % colors.length]
+                ],
+              ),
+              border: value['empty'] ? null : new Border.all(
+                  width: 1.0,
+                  style: BorderStyle.solid
+              ),
+              borderRadius: new BorderRadius.all(new Radius.circular(8.0)),
+            ),
+          )
+        )
+      ).toList()
+    )
+).toList();
 
 class MyApp extends StatelessWidget {
   @override
@@ -90,7 +124,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
           "x": x,
           "y": y,
           "empty": empty,
-          "colorIndex": empty ? null : x+y
+          "colorIndex": empty ? null : x+y,
         });
 
 				if(targetIndex++ == 7) {
@@ -134,33 +168,12 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       ),
       body: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: grid.map<Widget>(
-              (row) => Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: row.map<Widget>(
-                  (value) => Container(
-                    width: 20,
-                    height: 20,
-                    margin: const EdgeInsets.all(2.0),
-                    decoration: new BoxDecoration(
-                      color: value['empty'] ? null : colors[(value['colorIndex'] + animation.value.toInt()) % colors.length],
-                      gradient: value['empty'] || style != 'gradient' ? null : new LinearGradient(
-                        colors: value['empty'] ? [] : [
-                          colors[(value['colorIndex'] + animation.value.toInt()) % colors.length],
-                          colors[(value['colorIndex'] + animation.value.toInt() + 1) % colors.length]
-                        ],
-                      ),
-                      border: value['empty'] ? null : new Border.all(
-                          width: 1.0,
-                          style: BorderStyle.solid
-                      ),
-                      borderRadius: new BorderRadius.all(new Radius.circular(8.0)),
-                    ),
-                  )
-                ).toList()
-              )
-          ).toList()
+          children: renderShapeUp(animation, null, (colorIndex) => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => SecondRoute(colorIndex: colorIndex)),
+          ))
           ..add(SizedBox(height: 10))
+          ..add(Container(padding: const EdgeInsets.all(20.0), child: Text('Clicking on any grid cell will load a new route with a new Shape Up widget in the selected color.')))
           ..add(
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -193,38 +206,28 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
               )
             )
           )
-          ..add(
-            Container(
-              margin: const EdgeInsets.only(top: 10.0),
-              child: RaisedButton(
-                child: Text('Load Another Scene'),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => SecondRoute()),
-                  );
-                },
-              )
-            ))
       ),
     );
   }
 }
 
 class SecondRoute extends StatelessWidget {
+
+  final int colorIndex;
+
+  SecondRoute({Key key, @required this.colorIndex}) : super(key: key);
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) {    
     return Scaffold(
       appBar: AppBar(
-        title: Text("Second Route"),
+        title: Text("Selected Color"),
       ),
       body: Center(
-        child: RaisedButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: Text('Go back!'),
-        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: renderShapeUp(null, colorIndex, null)
+        )
       ),
     );
   }
