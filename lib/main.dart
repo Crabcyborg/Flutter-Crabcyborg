@@ -82,7 +82,9 @@ String counter(compressed) {
 	return output;
 }
 
-String optimize(uncompresed) => counter(compress(uncompresed));
+String substitute(optimized) => optimized.replaceAll(new RegExp(r'00'), '@').replaceAll(new RegExp(r'\$\$'), '=');
+
+String optimize(uncompresed) => substitute(counter(compress(uncompresed)));
 
 class MyApp extends StatelessWidget {
   @override
