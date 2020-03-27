@@ -1,9 +1,88 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+final String counterTable = '^*-_~`'; // x3-8
+final String table = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\$';
+final int base = table.length;
 
 final double cellSize = 20;
 
 void main() => runApp(MyApp());
+
+String toBase(number) {
+  int r = number % base;
+  String res = table[r];
+	int q = number ~/ base;
+
+  while(q > 0) {
+    r = q % base;
+    q = q ~/ base;
+    res = table[r] + res;
+	}
+	
+  return res.padLeft(4, '0');
+}
+
+String compress(uncompressed) {
+  List<String> compressed = [];
+
+  for(int i = 0; i < uncompressed.length; i += 3) {
+    List<int> s = uncompressed.sublist(i, min<int>(i+3, uncompressed.length));
+
+   while(s.length < 3) {
+			s.add(0);
+		}
+
+		int merged = s[0] + (s[1] << 8) + (s[2] << 16);
+		compressed.add(toBase(merged));
+	}
+
+	return compressed.join('');
+}
+
+String counter(compressed) {
+  String previous;
+  String output = '';
+  int count = 0;
+
+  void addPreviousCharacterToOutput() {
+    if(previous == null) {
+      return;
+    }
+
+    output += previous;
+
+		if(count == 2) {
+			output += previous;
+		} else if(count > 1) {
+			output += counterTable[count-3];
+		}
+  }
+
+  for(int i = 0; i < compressed.length; ++i) {
+    String c = compressed[i];
+
+    if(c == previous) {
+			++count;
+
+			if(count-3 == counterTable.length) {
+				output += previous;
+				output += counterTable[counterTable.length-1];
+				count = 1;
+			}
+		} else {
+			addPreviousCharacterToOutput();
+			count = 1;
+			previous = c;
+		}
+  }
+
+	addPreviousCharacterToOutput();
+	return output;
+}
+
+String optimize(uncompresed) => counter(compress(uncompresed));
 
 class MyApp extends StatelessWidget {
   @override
@@ -126,7 +205,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
             grid.add(row);
           }
 
-          String shape = "$height,$width,";
+          List<int> shape = [height,width];
 
           int index = 0;
           int value = 0;
@@ -138,19 +217,18 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
               }
 
               if(++index == 8) {
-                shape += "$value,";
+                shape.add(value);
                 value = index = 0;
               }
             });
           });
 
           if(value > 0) {
-            shape += "$value";
-          } else {
-            shape = shape.substring(0, shape.length-1);
+            shape.add(value);
           }
 
-          String url = "https://crabcyb.org/shapeup/$shape";
+          String configuration = optimize(shape);
+          String url = "https://crabcyb.org/shapeup/$configuration";
 
           if(await canLaunch(url)) {
             await launch(url);
